@@ -12,7 +12,19 @@ local rpc = loader({
 })
 ```
 
-Le loader GitHub direct nécessite que le fichier brut soit accessible dans l’environnement Roblox. Pour un dépôt privé, copie ou distribue localement les deux scripts avec le moyen d’accès GitHub de ton choix. Pour une utilisation locale, le contenu de `LJRPC.lua` retourne un module et tu peux appeler `Connect` sur ce module.
+Avec le dépôt privé, place `Loader.lua` et `LJRPC.lua` dans le dossier accessible à `readfile`, puis lance :
+
+```lua
+local loader = assert(loadstring(readfile("Loader.lua")))
+local rpc = loader({
+ Url = "wss://m4gix-ws.onrender.com/ljrpc/ws",
+ LocalPath = "LJRPC.lua",
+ Token = "<LJRPC_LUA_TOKEN>",
+ AllowEval = true
+})
+```
+
+`Source` permet aussi de passer le code du module en mémoire. `SourceUrl` permet d’utiliser une URL de distribution qui donne accès au fichier brut.
 
 `AllowEval` autorise le client authentifié à exécuter du Luau dans la session. Active-le uniquement avec un client de confiance. Une fonction peut aussi être déclarée localement via `rpc.Register(name, fn)`. Un bloc envoyé à `Eval` reçoit le module RPC, puis les arguments de l’appel dans `...`. Le premier résultat est renvoyé. Les valeurs ordinaires doivent être sérialisables en JSON.
 

@@ -286,6 +286,7 @@ function LJRPC.Connect(options)
  local channel = transport.connect(options.Url)
  socket = channel
  local busy = false
+ local ready = false
  local function send(message)
   channel:Send(Http:JSONEncode(message))
  end
@@ -294,8 +295,12 @@ function LJRPC.Connect(options)
  end)
  channel.OnMessage:Connect(function(raw)
   local decoded, request = pcall(Http.JSONDecode, Http, raw)
-  if not decoded or type(request) ~= "table" or request.jsonrpc ~= "2.0" or type(request.id) ~= "string" then return end
-  if busy or socket ~= channel then return end
+  if not decoded or type(request) ~= "table" or socket ~= channel then return end
+  if request.type == "ready" then
+   ready = true
+   return
+  end
+  if busy or request.jsonrpc ~= "2.0" or type(request.id) ~= "string" then return end
   busy = true
   task.spawn(function()
    local response = {jsonrpc = "2.0", id = request.id}
@@ -331,7 +336,24 @@ function LJRPC.Connect(options)
    busy = false
   end)
  end)
- send({type = "hello", role = "lua", token = options.Token})
+ local sent, reason = pcall(send, {type = "hello", role = "lua", token = options.Token})
+ if not sent then
+  if socket == channel then pcall(LJRPC.Close) end
+  error(reason, 0)
+ end
+ if options.WaitReady then
+  local deadline = os.clock() + 6
+  while not ready and socket == channel and os.clock() < deadline do
+   task.wait()
+  end
+  if socket ~= channel then
+   error("LJRPC: Render closed the connection before accepting the Lua session", 0)
+  end
+  if not ready then
+   pcall(LJRPC.Close)
+   error("LJRPC: Render did not acknowledge the Lua session", 0)
+  end
+ end
  return LJRPC
 end
 

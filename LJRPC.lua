@@ -69,8 +69,9 @@ end
 
 local function expose(instance)
  if destroyed[instance] then return nil end
+ local kind = typeof(instance)
  local id = handles[instance]
- if not id and typeof(instance) == "SharedTable" then
+ if not id and kind == "SharedTable" then
   -- Roblox can return a new userdata wrapper for the same shared table.
   for existingId, existing in pairs(instances) do
    if typeof(existing) == "SharedTable" and existing == instance then
@@ -84,15 +85,18 @@ local function expose(instance)
   id = Http:GenerateGUID(false)
   handles[instance], instances[id] = id, instance
   handleCount += 1
-  if typeof(instance) == "Instance" then
+  if kind == "Instance" then
    destroyConnections[id] = instance.Destroying:Connect(function()
     destroyed[instance] = true
     release(id)
    end)
   end
  end
- if typeof(instance) == "Instance" then
+ if kind == "Instance" then
   return { ["$ref"] = id, ["$class"] = instance.ClassName }
+ end
+ if kind ~= "table" then
+  return { ["$ref"] = id, ["$kind"] = kind }
  end
  return { ["$ref"] = id }
 end

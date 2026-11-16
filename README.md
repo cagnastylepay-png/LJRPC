@@ -2,23 +2,22 @@
 
 Client Luau de JSON-RPC 2.0 pour Roblox, avec relais WebSocket Render. Le relais accepte un client C# et une session Lua. Une connexion authentifiée transporte une requête à la fois.
 
+Définis `LJRPC_LUA_TOKEN` dans l’environnement global de ton exécuteur avec le jeton Lua de Render, puis lance le loader GitHub.
+
+```lua
+local source = game:HttpGet("https://raw.githubusercontent.com/cagnastylepay-png/LJRPC/main/Loader.lua")
+local chunk, failure = loadstring(source, "LJRPC/Loader")
+assert(chunk, failure)
+return chunk()
+```
+
+Le loader utilise `wss://m4gix-ws.onrender.com/ljrpc/ws`, active `AllowEval` et enregistre `SmokePing` pour le test de connexion. Tu peux aussi lui passer une table d’options explicite.
+
 ```lua
 local loader = assert(loadstring(game:HttpGet(
  "https://raw.githubusercontent.com/cagnastylepay-png/LJRPC/main/Loader.lua")))
 local rpc = loader({
  Url = "wss://m4gix-ws.onrender.com/ljrpc/ws",
- Token = "<LJRPC_LUA_TOKEN>",
- AllowEval = true
-})
-```
-
-Avec le dépôt privé, place `Loader.lua` et `LJRPC.lua` dans le dossier accessible à `readfile`, puis lance :
-
-```lua
-local loader = assert(loadstring(readfile("Loader.lua")))
-local rpc = loader({
- Url = "wss://m4gix-ws.onrender.com/ljrpc/ws",
- LocalPath = "LJRPC.lua",
  Token = "<LJRPC_LUA_TOKEN>",
  AllowEval = true
 })

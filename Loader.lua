@@ -8,6 +8,7 @@ if useGlobalToken then
   Url = "wss://m4gix-ws.onrender.com/ljrpc/ws",
   Token = token,
   AllowEval = true,
+  WaitReady = true,
  }
 end
 assert(type(options) == "table", "Pass LJRPC connection options to the loader")
@@ -25,4 +26,8 @@ local rpc = chunk()
 if useGlobalToken then
  rpc.Register("SmokePing", function() return "pong" end)
 end
-return rpc.Connect(options)
+local session = rpc.Connect(options)
+if useGlobalToken then
+ print("[LJRPC] Connecté à Render · SmokePing disponible")
+end
+return session

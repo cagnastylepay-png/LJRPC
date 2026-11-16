@@ -13,6 +13,7 @@ local instances = {}
 local handles = {}
 local handleCount = 0
 local destroyConnections = {}
+local scheduledTasks = {}
 local destroyed = setmetatable({}, {__mode = "k"})
 
 function LJRPC.ConnectionGuard()
@@ -45,6 +46,11 @@ function LJRPC.DestroyInstance(instance)
 end
 
 local function resetHandles()
+ for state in pairs(scheduledTasks) do
+  if state.thread ~= coroutine.running() then pcall(task.cancel, state.thread) end
+  state.status = "cancelled"
+ end
+ table.clear(scheduledTasks)
  for _, connection in pairs(destroyConnections) do connection:Disconnect() end
  table.clear(destroyConnections)
  table.clear(instances)
@@ -77,6 +83,34 @@ local function expose(instance)
   end
  end
  return { ["$ref"] = id }
+end
+
+function LJRPC.StartTask(source, ...)
+ assert(socket ~= nil, "LJRPC is disconnected")
+ local callback = assert(loadstring(source, "LJRPC/Task"))
+ local state = {status = "running"}
+ local reference = expose(state)
+ local arguments = table.pack(...)
+ state.thread = task.defer(function()
+  local ok, result = pcall(callback, LJRPC, table.unpack(arguments, 1, arguments.n))
+  if not scheduledTasks[state] then return end
+  if ok then
+   state.status, state.value = "completed", result
+  else
+   state.status, state.error = "failed", tostring(result):sub(1, 500)
+  end
+  scheduledTasks[state] = nil
+ end)
+ scheduledTasks[state] = true
+ return reference
+end
+
+function LJRPC.CancelTask(state)
+ if not scheduledTasks[state] then return false end
+ task.cancel(state.thread)
+ state.status = "cancelled"
+ scheduledTasks[state] = nil
+ return true
 end
 
 local parameterConstructors = {

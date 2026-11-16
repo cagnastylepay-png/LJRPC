@@ -48,6 +48,12 @@ function LJRPC.DestroyInstance(instance)
  end
 end
 
+function LJRPC.DisconnectAndRelease(connection)
+ assert(typeof(connection) == "RBXScriptConnection", "Expected Roblox signal connection")
+ connection:Disconnect()
+ return release(handles[connection])
+end
+
 local function resetHandles()
  for state in pairs(scheduledTasks) do
   if state.thread ~= coroutine.running() then pcall(task.cancel, state.thread) end

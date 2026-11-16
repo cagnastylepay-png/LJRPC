@@ -12,35 +12,62 @@ end
 local instances = {}
 local handles = {}
 local handleCount = 0
+local destroyConnections = {}
+local destroyed = setmetatable({}, {__mode = "k"})
 
 function LJRPC.ConnectionGuard()
  local connection = socket
  return function() return socket == connection end
 end
 
+local function release(id)
+ local instance = instances[id]
+ if not instance then return false end
+ local connection = destroyConnections[id]
+ if connection then connection:Disconnect() end
+ destroyConnections[id] = nil
+ instances[id], handles[instance] = nil, nil
+ handleCount -= 1
+ return true
+end
+
+LJRPC.Register("Release", release)
+
+function LJRPC.DestroyInstance(instance)
+ local descendants = instance:GetDescendants()
+ instance:Destroy()
+ destroyed[instance] = true
+ release(handles[instance])
+ for _, child in ipairs(descendants) do
+  destroyed[child] = true
+  release(handles[child])
+ end
+end
+
+local function resetHandles()
+ for _, connection in pairs(destroyConnections) do connection:Disconnect() end
+ table.clear(destroyConnections)
+ table.clear(instances)
+ table.clear(handles)
+ handleCount = 0
+end
+
 local function expose(instance)
+ if destroyed[instance] then return nil end
  local id = handles[instance]
  if not id then
   assert(handleCount < 512, "Object reference limit reached")
   id = Http:GenerateGUID(false)
   handles[instance], instances[id] = id, instance
   handleCount += 1
+  if typeof(instance) == "Instance" then
+   destroyConnections[id] = instance.Destroying:Connect(function()
+    destroyed[instance] = true
+    release(id)
+   end)
+  end
  end
  return { ["$ref"] = id }
-end
-
-LJRPC.Register("Release", function(id)
- local instance = instances[id]
- if not instance then return false end
- instances[id], handles[instance] = nil, nil
- handleCount -= 1
- return true
-end)
-
-local function resetHandles()
- table.clear(instances)
- table.clear(handles)
- handleCount = 0
 end
 
 local function decode(value, depth)

@@ -98,12 +98,17 @@ function LJRPC.StartTask(source, ...)
  local reference = expose(state)
  local arguments = table.pack(...)
  state.thread = task.defer(function()
-  local ok, result = pcall(callback, LJRPC, table.unpack(arguments, 1, arguments.n))
+  local result = table.pack(pcall(callback, LJRPC, table.unpack(arguments, 1, arguments.n)))
   if not scheduledTasks[state] then return end
-  if ok then
-   state.status, state.value = "completed", result
+  if result[1] then
+   local values = {}
+   for index = 2, result.n do
+    local value = result[index]
+    values[index - 1] = {value = value, isNil = value == nil}
+   end
+   state.status, state.value, state.values = "completed", result[2], values
   else
-   state.status, state.error = "failed", tostring(result):sub(1, 500)
+   state.status, state.error = "failed", tostring(result[2]):sub(1, 500)
   end
   scheduledTasks[state] = nil
  end)

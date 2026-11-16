@@ -233,6 +233,12 @@ local function decode(value, depth)
  if kind == "Color3" then return Color3.new(value.r, value.g, value.b) end
  if kind == "CFrame" then return CFrame.new(table.unpack(value.components)) end
  if kind == "EnumItem" then return Enum[value.enum][value.name] end
+ if kind == "Enum" then return Enum[value.name] end
+ if kind == "DockWidgetPluginGuiInfo" then
+  return DockWidgetPluginGuiInfo.new(decode(value.initialDockState, depth + 1),
+   value.initialEnabled, value.initialEnabledShouldOverrideRestore,
+   value.floatingXSize, value.floatingYSize, value.minWidth, value.minHeight)
+ end
  if kind == "UDim" then return UDim.new(value.scale,value.offset) end
  if kind == "UDim2" then return UDim2.new(decode(value.x,depth+1),decode(value.y,depth+1)) end
  if kind == "NumberRange" then return NumberRange.new(value.min,value.max) end
@@ -309,6 +315,7 @@ local function encode(value, depth, preserveMapKeys)
  if kind == "Color3" then return {["$type"] = kind, r = value.R, g = value.G, b = value.B} end
  if kind == "CFrame" then return {["$type"] = kind, components = {value:GetComponents()}} end
  if kind == "EnumItem" then return {["$type"] = kind, enum = (tostring(value.EnumType):gsub("^Enum%.", "")), name = value.Name} end
+ if kind == "Enum" then return {["$type"] = kind, name = (tostring(value):gsub("^Enum%.", ""))} end
  if kind == "UDim" then return {["$type"]=kind, scale=value.Scale, offset=value.Offset} end
  if kind == "UDim2" then return {["$type"]=kind, x=encode(value.X,depth+1), y=encode(value.Y,depth+1)} end
  if kind == "NumberRange" then return {["$type"]=kind, min=value.Min, max=value.Max} end

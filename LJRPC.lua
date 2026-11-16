@@ -349,7 +349,10 @@ local function encode(value, depth, preserveMapKeys)
  if kind == "Vector2" then return {["$type"] = kind, x = value.X, y = value.Y} end
  if kind == "Color3" then return {["$type"] = kind, r = value.R, g = value.G, b = value.B} end
  if kind == "CFrame" then return {["$type"] = kind, components = {value:GetComponents()}} end
- if kind == "EnumItem" then return {["$type"] = kind, enum = (tostring(value.EnumType):gsub("^Enum%.", "")), name = value.Name} end
+ if kind == "EnumItem" then
+  return {["$type"] = kind, enum = (tostring(value.EnumType):gsub("^Enum%.", "")),
+   name = value.Name, value = value.Value}
+ end
  if kind == "Enum" then return {["$type"] = kind, name = (tostring(value):gsub("^Enum%.", ""))} end
  if kind == "User" then
   return {["$type"] = kind, id = value.Id, domainType = encode(value.DomainType, depth + 1),

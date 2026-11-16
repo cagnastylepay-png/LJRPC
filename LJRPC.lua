@@ -106,6 +106,24 @@ local function decode(value, depth)
   if value.source == "Object" then return Content.fromObject((decode(value.object, depth + 1))) end
   error("Unsupported Roblox Content source", 0)
  end
+ if kind == "Axes" then
+  local flags = {}
+  if value.x then table.insert(flags, Enum.Axis.X) end
+  if value.y then table.insert(flags, Enum.Axis.Y) end
+  if value.z then table.insert(flags, Enum.Axis.Z) end
+  return Axes.new(table.unpack(flags))
+ end
+ if kind == "Faces" then
+  local flags = {}
+  if value.right then table.insert(flags, Enum.NormalId.Right) end
+  if value.top then table.insert(flags, Enum.NormalId.Top) end
+  if value.back then table.insert(flags, Enum.NormalId.Back) end
+  if value.left then table.insert(flags, Enum.NormalId.Left) end
+  if value.bottom then table.insert(flags, Enum.NormalId.Bottom) end
+  if value.front then table.insert(flags, Enum.NormalId.Front) end
+  return Faces.new(table.unpack(flags))
+ end
+ if kind == "Region3" then return Region3.new(decode(value.min, depth+1), decode(value.max, depth+1)) end
  if kind == "Vector2int16" then return Vector2int16.new(value.x, value.y) end
  if kind == "Vector3int16" then return Vector3int16.new(value.x, value.y, value.z) end
  if kind == "Region3int16" then return Region3int16.new(decode(value.min, depth+1), decode(value.max, depth+1)) end
@@ -148,6 +166,14 @@ local function encode(value, depth)
  end
  if kind == "Content" then
   return {["$type"]=kind, source=value.SourceType.Name, uri=value.Uri, object=encode(value.Object, depth + 1)}
+ end
+ if kind == "Axes" then return {["$type"] = kind, x = value.X, y = value.Y, z = value.Z} end
+ if kind == "Faces" then
+  return {["$type"] = kind, right = value.Right, top = value.Top, back = value.Back, left = value.Left, bottom = value.Bottom, front = value.Front}
+ end
+ if kind == "Region3" then
+  local center, halfSize = value.CFrame.Position, value.Size / 2
+  return {["$type"] = kind, min = encode(center - halfSize, depth+1), max = encode(center + halfSize, depth+1)}
  end
  if kind == "Vector2int16" then return {["$type"] = kind, x = value.X, y = value.Y} end
  if kind == "Vector3int16" then return {["$type"] = kind, x = value.X, y = value.Y, z = value.Z} end

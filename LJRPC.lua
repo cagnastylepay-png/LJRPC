@@ -106,6 +106,12 @@ local function decode(value, depth)
   if value.source == "Object" then return Content.fromObject((decode(value.object, depth + 1))) end
   error("Unsupported Roblox Content source", 0)
  end
+ if kind == "PathWaypoint" then
+  return PathWaypoint.new(decode(value.position, depth+1), decode(value.action, depth+1), value.label)
+ end
+ if kind == "Path2DControlPoint" then
+  return Path2DControlPoint.new(decode(value.position, depth+1), decode(value.leftTangent, depth+1), decode(value.rightTangent, depth+1))
+ end
  if kind == "Axes" then
   local flags = {}
   if value.x then table.insert(flags, Enum.Axis.X) end
@@ -166,6 +172,12 @@ local function encode(value, depth)
  end
  if kind == "Content" then
   return {["$type"]=kind, source=value.SourceType.Name, uri=value.Uri, object=encode(value.Object, depth + 1)}
+ end
+ if kind == "PathWaypoint" then
+  return {["$type"] = kind, position = encode(value.Position, depth+1), action = encode(value.Action, depth+1), label = value.Label}
+ end
+ if kind == "Path2DControlPoint" then
+  return {["$type"] = kind, position = encode(value.Position, depth+1), leftTangent = encode(value.LeftTangent, depth+1), rightTangent = encode(value.RightTangent, depth+1)}
  end
  if kind == "Axes" then return {["$type"] = kind, x = value.X, y = value.Y, z = value.Z} end
  if kind == "Faces" then

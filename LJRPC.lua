@@ -314,6 +314,17 @@ local function encode(value, depth)
  return value
 end
 
+-- Validate one event argument independently so malformed data cannot discard a batch.
+function LJRPC.EncodeSignalTable(value)
+ local ok, wire = pcall(function()
+  local result = encode(value, 0)
+  Http:JSONEncode(result)
+  return result
+ end)
+ if ok then return wire end
+ return "<table unavailable: unsupported or cyclic data>"
+end
+
 local function invoke(callback, params, count)
  for index = 1, count do params[index] = decode(params[index], 0) end
  return encode(callback(table.unpack(params, 1, count)), 0)

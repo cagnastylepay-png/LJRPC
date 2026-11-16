@@ -3,6 +3,7 @@ local Encoding = game:GetService("EncodingService")
 local LJRPC = {}
 local methods = {}
 local socket
+local maxFrameBytes = 65536
 
 function LJRPC.Register(name, callback)
  assert(type(name) == "string" and type(callback) == "function")
@@ -420,6 +421,8 @@ function LJRPC.Connect(options)
     end
     if not encoded then
      payload = Http:JSONEncode({jsonrpc = "2.0", id = request.id, error = {code = -32603, message = "Result is not JSON serializable"}})
+    elseif #payload > maxFrameBytes then
+     payload = Http:JSONEncode({jsonrpc = "2.0", id = request.id, error = {code = -32004, message = "Result exceeds the LJRPC frame limit"}})
     end
     pcall(function()channel:Send(payload)end)
    end

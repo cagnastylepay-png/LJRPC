@@ -33,8 +33,6 @@ local function release(id)
  return true
 end
 
-LJRPC.Register("Release", release)
-
 function LJRPC.DestroyObject(object, ...)
  object:Destroy(...)
  destroyed[object] = true
@@ -128,6 +126,14 @@ function LJRPC.DisposeTask(state)
  LJRPC.CancelTask(state)
  return release(id)
 end
+
+LJRPC.Register("Release", function(id)
+ local state = instances[id]
+ if state and scheduledTasks[state] then
+  return LJRPC.DisposeTask(state)
+ end
+ return release(id)
+end)
 
 local parameterConstructors = {
  RaycastParams = function() return RaycastParams.new() end,

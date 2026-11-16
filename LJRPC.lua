@@ -261,7 +261,8 @@ local function encode(value, depth, preserveMapKeys)
   end
   return result
  end
- if kind == "Instance" or kind == "Object" or kind == "SharedTable" or kind == "AdReward" or kind == "RBXScriptConnection" then
+ if kind == "Instance" or kind == "Object" or kind == "SharedTable" or kind == "AdReward"
+     or kind == "RBXScriptConnection" or kind == "Random" then
   return expose(value)
  end
  if kind == "buffer" then

@@ -104,6 +104,13 @@ local function expose(instance)
  return { ["$ref"] = id }
 end
 
+function LJRPC.LoadModule(source, ...)
+ local chunk = assert(loadstring(source, "LJRPC/Module"))
+ local module = chunk(...)
+ assert(type(module) == "table", "Luau module must return a table")
+ return expose({module = module})
+end
+
 function LJRPC.StartTask(source, ...)
  assert(socket ~= nil, "LJRPC is disconnected")
  local callback = assert(loadstring(source, "LJRPC/Task"))

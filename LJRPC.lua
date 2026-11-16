@@ -35,11 +35,15 @@ end
 
 LJRPC.Register("Release", release)
 
+function LJRPC.DestroyObject(object, ...)
+ object:Destroy(...)
+ destroyed[object] = true
+ release(handles[object])
+end
+
 function LJRPC.DestroyInstance(instance)
  local descendants = instance:GetDescendants()
- instance:Destroy()
- destroyed[instance] = true
- release(handles[instance])
+ LJRPC.DestroyObject(instance)
  for _, child in ipairs(descendants) do
   destroyed[child] = true
   release(handles[child])

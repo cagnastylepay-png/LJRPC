@@ -83,6 +83,12 @@ local function wireName(property)
  return property:sub(1, 1):lower() .. property:sub(2)
 end
 
+local curveKeyConstructors = {
+ FloatCurveKey = function(...) return FloatCurveKey.new(...) end,
+ RotationCurveKey = function(...) return RotationCurveKey.new(...) end,
+ ValueCurveKey = function(...) return ValueCurveKey.new(...) end,
+}
+
 local function decode(value, depth)
  if type(value) ~= "table" then return value end
  assert(depth < 24, "Arguments nested too deeply")
@@ -105,6 +111,13 @@ local function decode(value, depth)
   if value.source == "Uri" then return Content.fromUri(value.uri) end
   if value.source == "Object" then return Content.fromObject((decode(value.object, depth + 1))) end
   error("Unsupported Roblox Content source", 0)
+ end
+ local makeCurveKey = curveKeyConstructors[kind]
+ if makeCurveKey then
+  local key = makeCurveKey(value.time, decode(value.value, depth+1), decode(value.interpolation, depth+1))
+  if value.leftTangent ~= nil then key.LeftTangent = value.leftTangent end
+  if value.rightTangent ~= nil then key.RightTangent = value.rightTangent end
+  return key
  end
  if kind == "PathWaypoint" then
   return PathWaypoint.new(decode(value.position, depth+1), decode(value.action, depth+1), value.label)
@@ -172,6 +185,13 @@ local function encode(value, depth)
  end
  if kind == "Content" then
   return {["$type"]=kind, source=value.SourceType.Name, uri=value.Uri, object=encode(value.Object, depth + 1)}
+ end
+ if curveKeyConstructors[kind] then
+  return {
+   ["$type"] = kind, time = value.Time, value = encode(value.Value, depth+1),
+   interpolation = encode(value.Interpolation, depth+1),
+   leftTangent = value.LeftTangent, rightTangent = value.RightTangent,
+  }
  end
  if kind == "PathWaypoint" then
   return {["$type"] = kind, position = encode(value.Position, depth+1), action = encode(value.Action, depth+1), label = value.Label}

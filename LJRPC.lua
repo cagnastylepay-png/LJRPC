@@ -233,7 +233,7 @@ local function decode(value, depth)
  return value
 end
 
-local function encode(value, depth)
+local function encode(value, depth, preserveMapKeys)
  local kind = typeof(value)
  local fields = parameterFields[kind]
  if fields then
@@ -308,7 +308,27 @@ local function encode(value, depth)
  if kind == "table" then
   assert(depth < 24, "Result nested too deeply or cyclic")
   local result = {}
-  for key, item in pairs(value) do result[key] = encode(item, depth + 1) end
+  if preserveMapKeys then
+   local numeric, strings, maxIndex, other = 0, 0, 0, false
+   for key in pairs(value) do
+    if type(key) == "number" and key >= 1 and key % 1 == 0 then
+     numeric += 1
+     maxIndex = math.max(maxIndex, key)
+    elseif type(key) == "string" then
+     strings += 1
+    else
+     assert(type(key) == "boolean" or type(key) == "number", "Unsupported event map key")
+     other = true
+    end
+   end
+   if other or (numeric > 0 and (strings > 0 or maxIndex ~= numeric)) then
+    for key, item in pairs(value) do
+     table.insert(result, {key = key, value = encode(item, depth + 1, true)})
+    end
+    return {["$type"] = "LuaMap", entries = result}
+   end
+  end
+  for key, item in pairs(value) do result[key] = encode(item, depth + 1, preserveMapKeys) end
   return result
  end
  return value
@@ -317,7 +337,7 @@ end
 -- Validate one event argument independently so malformed data cannot discard a batch.
 function LJRPC.EncodeSignalTable(value)
  local ok, wire = pcall(function()
-  local result = encode(value, 0)
+  local result = encode(value, 0, true)
   Http:JSONEncode(result)
   return result
  end)

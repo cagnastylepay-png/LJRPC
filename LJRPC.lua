@@ -106,11 +106,19 @@ function LJRPC.StartTask(source, ...)
 end
 
 function LJRPC.CancelTask(state)
- if not scheduledTasks[state] then return false end
+ if not scheduledTasks[state] or state.thread == coroutine.running() then return false end
  task.cancel(state.thread)
  state.status = "cancelled"
  scheduledTasks[state] = nil
  return true
+end
+
+function LJRPC.DisposeTask(state)
+ local id = handles[state]
+ if not id or type(state) ~= "table" or state.thread == nil then return false end
+ if state.thread == coroutine.running() then return false end
+ LJRPC.CancelTask(state)
+ return release(id)
 end
 
 local parameterConstructors = {

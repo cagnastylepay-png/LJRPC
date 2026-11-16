@@ -363,6 +363,33 @@ function LJRPC.PackListPage(list, offset)
  return {items = items}
 end
 
+function LJRPC.PackSignalQueue(queue)
+ local events, remaining = {}, {}
+ local size, dropped = 0, 0
+ for index, event in ipairs(queue) do
+  local ok, item, bytes = pcall(function()
+   local arguments = {}
+   for i, argument in ipairs(event.arguments or {}) do
+    local value = table.clone(argument)
+    if value.kind == "table" then value.value = LJRPC.EncodeSignalTable(value.value) end
+    arguments[i] = value
+   end
+   local packed = encode({arguments = #arguments > 0 and arguments or nil}, 0)
+   return packed, #Http:JSONEncode(packed) + 1
+  end)
+  if not ok or bytes > 48000 then
+   dropped += 1
+  elseif size + bytes > 48000 then
+   table.move(queue, index, #queue, 1, remaining)
+   break
+  else
+   table.insert(events, item)
+   size += bytes
+  end
+ end
+ return events, remaining, dropped
+end
+
 local function invoke(callback, params, count)
  for index = 1, count do params[index] = decode(params[index], 0) end
  return encode(callback(table.unpack(params, 1, count)), 0)

@@ -95,6 +95,9 @@ local function expose(instance)
  if kind == "Instance" then
   return { ["$ref"] = id, ["$class"] = instance.ClassName }
  end
+ if kind == "Object" then
+  return { ["$ref"] = id, ["$class"] = instance.ClassName, ["$kind"] = kind }
+ end
  if kind ~= "table" then
   return { ["$ref"] = id, ["$kind"] = kind }
  end

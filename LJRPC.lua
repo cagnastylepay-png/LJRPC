@@ -70,6 +70,19 @@ local function expose(instance)
  return { ["$ref"] = id }
 end
 
+local spatialFields = {
+ RaycastParams = {
+  "CollisionGroup", "RespectCanCollide", "BruteForceAllSlow", "FilterDescendantsInstances", "FilterType", "IgnoreWater", "Margin", "SizeGradient", "IncludeInstances", "ExcludeInstances",
+ },
+ OverlapParams = {
+  "CollisionGroup", "RespectCanCollide", "BruteForceAllSlow", "FilterDescendantsInstances", "FilterType", "MaxParts", "Tolerance", "IncludeInstances", "ExcludeInstances",
+ },
+}
+
+local function wireName(property)
+ return property:sub(1, 1):lower() .. property:sub(2)
+end
+
 local function decode(value, depth)
  if type(value) ~= "table" then return value end
  assert(depth < 24, "Arguments nested too deeply")
@@ -77,6 +90,15 @@ local function decode(value, depth)
   return (assert(instances[value["$ref"]], "Unknown object reference"))
  end
  local kind = value["$type"]
+ local fields = spatialFields[kind]
+ if fields then
+  local params = kind == "RaycastParams" and RaycastParams.new() or OverlapParams.new()
+  for _, property in ipairs(fields) do
+   local item = value[wireName(property)]
+   if item ~= nil then params[property] = decode(item, depth + 1) end
+  end
+  return params
+ end
  if kind == "buffer" then return Encoding:Base64Decode(buffer.fromstring(value.data)) end
  if kind == "Content" then
   if value.source == "None" then return Content.none end
@@ -112,6 +134,14 @@ end
 
 local function encode(value, depth)
  local kind = typeof(value)
+ local fields = spatialFields[kind]
+ if fields then
+  local result = {["$type"] = kind}
+  for _, property in ipairs(fields) do
+   result[wireName(property)] = encode(value[property], depth + 1)
+  end
+  return result
+ end
  if kind == "Instance" or kind == "Object" then return expose(value) end
  if kind == "buffer" then
   return {["$type"]=kind, data=buffer.tostring(Encoding:Base64Encode(value))}

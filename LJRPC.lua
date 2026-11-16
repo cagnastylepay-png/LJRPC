@@ -116,6 +116,9 @@ local function decode(value, depth)
   return params
  end
  if kind == "buffer" then return Encoding:Base64Decode(buffer.fromstring(value.data)) end
+ if kind == "SecurityCapabilities" then
+  return SecurityCapabilities.new(table.unpack(decode(value.capabilities, depth + 1)))
+ end
  if kind == "Content" then
   if value.source == "None" then return Content.none end
   if value.source == "Uri" then return Content.fromUri(value.uri) end
@@ -192,6 +195,15 @@ local function encode(value, depth)
  if kind == "Instance" or kind == "Object" then return expose(value) end
  if kind == "buffer" then
   return {["$type"]=kind, data=buffer.tostring(Encoding:Base64Encode(value))}
+ end
+ if kind == "SecurityCapabilities" then
+  local capabilities = {}
+  for _, capability in ipairs(Enum.SecurityCapability:GetEnumItems()) do
+   if value:Contains(capability) then
+    table.insert(capabilities, encode(capability, depth + 1))
+   end
+  end
+  return {["$type"] = kind, capabilities = capabilities}
  end
  if kind == "Content" then
   return {["$type"]=kind, source=value.SourceType.Name, uri=value.Uri, object=encode(value.Object, depth + 1)}

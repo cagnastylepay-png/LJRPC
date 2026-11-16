@@ -70,7 +70,17 @@ local function expose(instance)
  return { ["$ref"] = id }
 end
 
-local spatialFields = {
+local parameterConstructors = {
+ RaycastParams = function() return RaycastParams.new() end,
+ OverlapParams = function() return OverlapParams.new() end,
+ CatalogSearchParams = function() return CatalogSearchParams.new() end,
+}
+
+local parameterFields = {
+ CatalogSearchParams = {
+  "SearchKeyword", "MinPrice", "MaxPrice", "SortType", "SortAggregation", "CategoryFilter", "SalesTypeFilter",
+  "BundleTypes", "AssetTypes", "IncludeOffSale", "CreatorName", "CreatorType", "CreatorId", "Limit",
+ },
  RaycastParams = {
   "CollisionGroup", "RespectCanCollide", "BruteForceAllSlow", "FilterDescendantsInstances", "FilterType", "IgnoreWater", "Margin", "SizeGradient", "IncludeInstances", "ExcludeInstances",
  },
@@ -96,9 +106,9 @@ local function decode(value, depth)
   return (assert(instances[value["$ref"]], "Unknown object reference"))
  end
  local kind = value["$type"]
- local fields = spatialFields[kind]
+ local fields = parameterFields[kind]
  if fields then
-  local params = kind == "RaycastParams" and RaycastParams.new() or OverlapParams.new()
+  local params = parameterConstructors[kind]()
   for _, property in ipairs(fields) do
    local item = value[wireName(property)]
    if item ~= nil then params[property] = decode(item, depth + 1) end
@@ -171,7 +181,7 @@ end
 
 local function encode(value, depth)
  local kind = typeof(value)
- local fields = spatialFields[kind]
+ local fields = parameterFields[kind]
  if fields then
   local result = {["$type"] = kind}
   for _, property in ipairs(fields) do

@@ -161,7 +161,7 @@ local parameterFields = {
 
 local referenceKinds = {
  Instance = true, Object = true, SharedTable = true, AdReward = true,
- RBXScriptConnection = true, Random = true, InstanceHandle = true, Secret = true,
+ RBXScriptConnection = true, Random = true, InstanceHandle = true, Secret = true, CollectionHandle = true,
 }
 
 -- Extra types beyond the original signal serializer's compatibility list.

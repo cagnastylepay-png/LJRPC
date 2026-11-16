@@ -87,6 +87,9 @@ local function expose(instance)
    end)
   end
  end
+ if typeof(instance) == "Instance" then
+  return { ["$ref"] = id, ["$class"] = instance.ClassName }
+ end
  return { ["$ref"] = id }
 end
 
@@ -162,6 +165,16 @@ local function decode(value, depth)
   return (assert(instances[value["$ref"]], "Unknown object reference"))
  end
  local kind = value["$type"]
+ if kind == "LuaMap" then
+  assert(type(value.entries) == "table", "Expected LuaMap entries")
+  local result = {}
+  for _, entry in ipairs(value.entries) do
+   local key = entry.key
+   assert(type(key) == "string" or type(key) == "number" or type(key) == "boolean", "Unsupported LuaMap key")
+   result[key] = decode(entry.value, depth + 1)
+  end
+  return result
+ end
  local fields = parameterFields[kind]
  if fields then
   local params = parameterConstructors[kind]()
@@ -326,7 +339,8 @@ local function encode(value, depth, preserveMapKeys)
      other = true
     end
    end
-   if other or (numeric > 0 and (strings > 0 or maxIndex ~= numeric)) then
+   if other or rawget(value, "$type") ~= nil or rawget(value, "$ref") ~= nil
+      or (numeric > 0 and (strings > 0 or maxIndex ~= numeric)) then
     for key, item in pairs(value) do
      table.insert(result, {key = key, value = encode(item, depth + 1, true)})
     end
@@ -394,9 +408,10 @@ function LJRPC.PackSignalQueue(queue)
  return events, remaining, dropped
 end
 
-local function invoke(callback, params, count)
+local function invoke(callback, params, count, preserveMapKeys)
  for index = 1, count do params[index] = decode(params[index], 0) end
- return encode(callback(table.unpack(params, 1, count)), 0)
+ local result = callback(table.unpack(params, 1, count))
+ return encode(result, 0, preserveMapKeys)
 end
 
 function LJRPC.Connect(options)
@@ -427,7 +442,8 @@ function LJRPC.Connect(options)
   task.spawn(function()
    local response = {jsonrpc = "2.0", id = request.id}
    local callback = methods[request.method]
-   if request.method == "Eval" and options.AllowEval == true then
+   local preserveMapKeys = request.method == "EvalPreservingMapKeys"
+   if (request.method == "Eval" or preserveMapKeys) and options.AllowEval == true then
     callback = function(source, ...)
      assert(type(source) == "string", "Expected Luau source")
      local chunk, reason = loadstring(source, "LJRPC/Eval")
@@ -438,7 +454,7 @@ function LJRPC.Connect(options)
    if not callback then
     response.error = {code = -32601, message = "Method not found"}
    else
-    local ok, value = pcall(invoke, callback, request.params, request.argc)
+    local ok, value = pcall(invoke, callback, request.params, request.argc, preserveMapKeys)
     if ok then
      response.result = value
     else

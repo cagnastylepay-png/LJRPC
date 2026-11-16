@@ -245,6 +245,7 @@ local function decode(value, depth)
  if kind == "CFrame" then return CFrame.new(table.unpack(value.components)) end
  if kind == "EnumItem" then return Enum[value.enum][value.name] end
  if kind == "Enum" then return Enum[value.name] end
+ if kind == "User" then return User.fromString(value.serialized) end
  if kind == "DockWidgetPluginGuiInfo" then
   return DockWidgetPluginGuiInfo.new(decode(value.initialDockState, depth + 1),
    value.initialEnabled, value.initialEnabledShouldOverrideRestore,
@@ -327,6 +328,10 @@ local function encode(value, depth, preserveMapKeys)
  if kind == "CFrame" then return {["$type"] = kind, components = {value:GetComponents()}} end
  if kind == "EnumItem" then return {["$type"] = kind, enum = (tostring(value.EnumType):gsub("^Enum%.", "")), name = value.Name} end
  if kind == "Enum" then return {["$type"] = kind, name = (tostring(value):gsub("^Enum%.", ""))} end
+ if kind == "User" then
+  return {["$type"] = kind, id = value.Id, domainType = encode(value.DomainType, depth + 1),
+   domainId = value.DomainId, serialized = value:ToString()}
+ end
  if kind == "UDim" then return {["$type"]=kind, scale=value.Scale, offset=value.Offset} end
  if kind == "UDim2" then return {["$type"]=kind, x=encode(value.X,depth+1), y=encode(value.Y,depth+1)} end
  if kind == "NumberRange" then return {["$type"]=kind, min=value.Min, max=value.Max} end

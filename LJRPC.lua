@@ -345,6 +345,23 @@ function LJRPC.EncodeSignalTable(value)
  return "<table unavailable: unsupported or cyclic data>"
 end
 
+-- Keep a page below the 64 KiB relay limit, with space for its RPC envelope.
+function LJRPC.PackListPage(list, offset)
+ assert(type(offset) == "number" and offset >= 0 and offset % 1 == 0, "Invalid list offset")
+ local items, size = {}, 0
+ for index = offset + 1, #list do
+  local item = encode(list[index], 0)
+  local bytes = #Http:JSONEncode(item) + 1
+  assert(bytes <= 48000, "A single list entry exceeds the LJRPC page limit")
+  if size + bytes > 48000 then
+   return {items = items, nextOffset = index - 1}
+  end
+  table.insert(items, item)
+  size += bytes
+ end
+ return {items = items}
+end
+
 local function invoke(callback, params, count)
  for index = 1, count do params[index] = decode(params[index], 0) end
  return encode(callback(table.unpack(params, 1, count)), 0)

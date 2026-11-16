@@ -55,6 +55,15 @@ end
 local function expose(instance)
  if destroyed[instance] then return nil end
  local id = handles[instance]
+ if not id and typeof(instance) == "SharedTable" then
+  -- Roblox can return a new userdata wrapper for the same shared table.
+  for existingId, existing in pairs(instances) do
+   if typeof(existing) == "SharedTable" and existing == instance then
+    id = existingId
+    break
+   end
+  end
+ end
  if not id then
   assert(handleCount < 512, "Object reference limit reached")
   id = Http:GenerateGUID(false)
@@ -192,7 +201,7 @@ local function encode(value, depth)
   end
   return result
  end
- if kind == "Instance" or kind == "Object" then return expose(value) end
+ if kind == "Instance" or kind == "Object" or kind == "SharedTable" then return expose(value) end
  if kind == "buffer" then
   return {["$type"]=kind, data=buffer.tostring(Encoding:Base64Encode(value))}
  end

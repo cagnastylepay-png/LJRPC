@@ -159,6 +159,17 @@ local parameterFields = {
  },
 }
 
+local referenceKinds = {
+ Instance = true, Object = true, SharedTable = true, AdReward = true,
+ RBXScriptConnection = true, Random = true, InstanceHandle = true, Secret = true,
+}
+
+-- Extra types beyond the original signal serializer's compatibility list.
+function LJRPC.CanEncodeSignalValue(kind)
+ return referenceKinds[kind] == true or parameterFields[kind] ~= nil
+  or kind == "SecurityCapabilities" or kind == "User" or kind == "Enum"
+end
+
 local function wireName(property)
  return property:sub(1, 1):lower() .. property:sub(2)
 end
@@ -279,8 +290,7 @@ local function encode(value, depth, preserveMapKeys)
   end
   return result
  end
- if kind == "Instance" or kind == "Object" or kind == "SharedTable" or kind == "AdReward"
-     or kind == "RBXScriptConnection" or kind == "Random" or kind == "InstanceHandle" or kind == "Secret" then
+ if referenceKinds[kind] then
   return expose(value)
  end
  if kind == "buffer" then

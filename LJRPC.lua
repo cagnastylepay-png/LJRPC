@@ -1,4 +1,5 @@
 local Http = game:GetService("HttpService")
+local Encoding = game:GetService("EncodingService")
 local LJRPC = {}
 local methods = {}
 local socket
@@ -46,9 +47,16 @@ local function decode(value, depth)
  if type(value) ~= "table" then return value end
  assert(depth < 24, "Arguments nested too deeply")
  if type(value["$ref"]) == "string" then
-  return assert(instances[value["$ref"]], "Unknown object reference")
+  return (assert(instances[value["$ref"]], "Unknown object reference"))
  end
  local kind = value["$type"]
+ if kind == "buffer" then return Encoding:Base64Decode(buffer.fromstring(value.data)) end
+ if kind == "Content" then
+  if value.source == "None" then return Content.none end
+  if value.source == "Uri" then return Content.fromUri(value.uri) end
+  if value.source == "Object" then return Content.fromObject((decode(value.object, depth + 1))) end
+  error("Unsupported Roblox Content source", 0)
+ end
  if kind == "Vector3" then return Vector3.new(value.x, value.y, value.z) end
  if kind == "Vector2" then return Vector2.new(value.x, value.y) end
  if kind == "Color3" then return Color3.new(value.r, value.g, value.b) end
@@ -74,7 +82,13 @@ end
 
 local function encode(value, depth)
  local kind = typeof(value)
- if kind == "Instance" then return expose(value) end
+ if kind == "Instance" or kind == "Object" then return expose(value) end
+ if kind == "buffer" then
+  return {["$type"]=kind, data=buffer.tostring(Encoding:Base64Encode(value))}
+ end
+ if kind == "Content" then
+  return {["$type"]=kind, source=value.SourceType.Name, uri=value.Uri, object=encode(value.Object, depth + 1)}
+ end
  if kind == "Vector3" then return {["$type"] = kind, x = value.X, y = value.Y, z = value.Z} end
  if kind == "Vector2" then return {["$type"] = kind, x = value.X, y = value.Y} end
  if kind == "Color3" then return {["$type"] = kind, r = value.R, g = value.G, b = value.B} end

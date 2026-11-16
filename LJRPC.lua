@@ -84,6 +84,9 @@ local function decode(value, depth)
   if value.source == "Object" then return Content.fromObject((decode(value.object, depth + 1))) end
   error("Unsupported Roblox Content source", 0)
  end
+ if kind == "Vector2int16" then return Vector2int16.new(value.x, value.y) end
+ if kind == "Vector3int16" then return Vector3int16.new(value.x, value.y, value.z) end
+ if kind == "Region3int16" then return Region3int16.new(decode(value.min, depth+1), decode(value.max, depth+1)) end
  if kind == "Vector3" then return Vector3.new(value.x, value.y, value.z) end
  if kind == "Vector2" then return Vector2.new(value.x, value.y) end
  if kind == "Color3" then return Color3.new(value.r, value.g, value.b) end
@@ -116,6 +119,9 @@ local function encode(value, depth)
  if kind == "Content" then
   return {["$type"]=kind, source=value.SourceType.Name, uri=value.Uri, object=encode(value.Object, depth + 1)}
  end
+ if kind == "Vector2int16" then return {["$type"] = kind, x = value.X, y = value.Y} end
+ if kind == "Vector3int16" then return {["$type"] = kind, x = value.X, y = value.Y, z = value.Z} end
+ if kind == "Region3int16" then return {["$type"] = kind, min = encode(value.Min, depth+1), max = encode(value.Max, depth+1)} end
  if kind == "Vector3" then return {["$type"] = kind, x = value.X, y = value.Y, z = value.Z} end
  if kind == "Vector2" then return {["$type"] = kind, x = value.X, y = value.Y} end
  if kind == "Color3" then return {["$type"] = kind, r = value.R, g = value.G, b = value.B} end

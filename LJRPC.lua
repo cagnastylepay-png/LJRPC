@@ -54,6 +54,13 @@ local function decode(value, depth)
  if kind == "Color3" then return Color3.new(value.r, value.g, value.b) end
  if kind == "CFrame" then return CFrame.new(table.unpack(value.components)) end
  if kind == "EnumItem" then return Enum[value.enum][value.name] end
+ if kind == "UDim" then return UDim.new(value.scale,value.offset) end
+ if kind == "UDim2" then return UDim2.new(decode(value.x,depth+1),decode(value.y,depth+1)) end
+ if kind == "NumberRange" then return NumberRange.new(value.min,value.max) end
+ if kind == "Rect" then return Rect.new(decode(value.min,depth+1),decode(value.max,depth+1)) end
+ if kind == "Ray" then return Ray.new(decode(value.origin,depth+1),decode(value.direction,depth+1)) end
+ if kind == "BrickColor" then return BrickColor.new(value.number) end
+ if kind == "PhysicalProperties" then return PhysicalProperties.new(value.density,value.friction,value.elasticity,value.frictionWeight,value.elasticityWeight) end
  for key, item in pairs(value) do value[key] = decode(item, depth + 1) end
  return value
 end
@@ -66,6 +73,13 @@ local function encode(value, depth)
  if kind == "Color3" then return {["$type"] = kind, r = value.R, g = value.G, b = value.B} end
  if kind == "CFrame" then return {["$type"] = kind, components = {value:GetComponents()}} end
  if kind == "EnumItem" then return {["$type"] = kind, enum = (tostring(value.EnumType):gsub("^Enum%.", "")), name = value.Name} end
+ if kind == "UDim" then return {["$type"]=kind, scale=value.Scale, offset=value.Offset} end
+ if kind == "UDim2" then return {["$type"]=kind, x=encode(value.X,depth+1), y=encode(value.Y,depth+1)} end
+ if kind == "NumberRange" then return {["$type"]=kind, min=value.Min, max=value.Max} end
+ if kind == "Rect" then return {["$type"]=kind, min=encode(value.Min,depth+1), max=encode(value.Max,depth+1)} end
+ if kind == "Ray" then return {["$type"]=kind, origin=encode(value.Origin,depth+1), direction=encode(value.Direction,depth+1)} end
+ if kind == "BrickColor" then return {["$type"]=kind, number=value.Number} end
+ if kind == "PhysicalProperties" then return {["$type"]=kind, density=value.Density, friction=value.Friction, elasticity=value.Elasticity, frictionWeight=value.FrictionWeight, elasticityWeight=value.ElasticityWeight} end
  if kind == "table" then
   assert(depth < 24, "Result nested too deeply or cyclic")
   local result = {}

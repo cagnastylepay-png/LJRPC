@@ -61,6 +61,13 @@ local function decode(value, depth)
  if kind == "Ray" then return Ray.new(decode(value.origin,depth+1),decode(value.direction,depth+1)) end
  if kind == "BrickColor" then return BrickColor.new(value.number) end
  if kind == "PhysicalProperties" then return PhysicalProperties.new(value.density,value.friction,value.elasticity,value.frictionWeight,value.elasticityWeight) end
+ if kind == "NumberSequenceKeypoint" then return NumberSequenceKeypoint.new(value.time, value.value, value.envelope) end
+ if kind == "ColorSequenceKeypoint" then return ColorSequenceKeypoint.new(value.time, decode(value.value, depth+1)) end
+ if kind == "NumberSequence" then return NumberSequence.new(decode(value.keypoints, depth+1)) end
+ if kind == "ColorSequence" then return ColorSequence.new(decode(value.keypoints, depth+1)) end
+ if kind == "Font" then return Font.new(value.family, decode(value.weight, depth+1), decode(value.style, depth+1)) end
+ if kind == "DateTime" then return DateTime.fromUnixTimestampMillis(value.unixTimestampMillis) end
+ if kind == "TweenInfo" then return TweenInfo.new(value.time, decode(value.easingStyle, depth+1), decode(value.easingDirection, depth+1), value.repeatCount, value.reverses, value.delayTime) end
  for key, item in pairs(value) do value[key] = decode(item, depth + 1) end
  return value
 end
@@ -80,6 +87,14 @@ local function encode(value, depth)
  if kind == "Ray" then return {["$type"]=kind, origin=encode(value.Origin,depth+1), direction=encode(value.Direction,depth+1)} end
  if kind == "BrickColor" then return {["$type"]=kind, number=value.Number} end
  if kind == "PhysicalProperties" then return {["$type"]=kind, density=value.Density, friction=value.Friction, elasticity=value.Elasticity, frictionWeight=value.FrictionWeight, elasticityWeight=value.ElasticityWeight} end
+ if kind == "NumberSequenceKeypoint" then return {["$type"]=kind, time=value.Time, value=value.Value, envelope=value.Envelope} end
+ if kind == "ColorSequenceKeypoint" then return {["$type"]=kind, time=value.Time, value=encode(value.Value, depth+1)} end
+ if kind == "NumberSequence" then return {["$type"]=kind, keypoints=encode(value.Keypoints, depth+1)} end
+ if kind == "ColorSequence" then return {["$type"]=kind, keypoints=encode(value.Keypoints, depth+1)} end
+ if kind == "Font" then return {["$type"]=kind, family=value.Family, weight=encode(value.Weight, depth+1), style=encode(value.Style, depth+1)} end
+ if kind == "DateTime" then return {["$type"]=kind, unixTimestampMillis=value.UnixTimestampMillis} end
+ if kind == "TweenInfo" then return {["$type"]=kind, time=value.Time, easingStyle=encode(value.EasingStyle, depth+1), easingDirection=encode(value.EasingDirection, depth+1), repeatCount=value.RepeatCount, reverses=value.Reverses, delayTime=value.DelayTime} end
+ if kind == "RaycastResult" then return {["$type"]=kind, instance=encode(value.Instance, depth+1), position=encode(value.Position, depth+1), normal=encode(value.Normal, depth+1), material=encode(value.Material, depth+1), distance=value.Distance} end
  if kind == "table" then
   assert(depth < 24, "Result nested too deeply or cyclic")
   local result = {}
